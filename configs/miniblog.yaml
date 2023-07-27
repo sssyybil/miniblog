@@ -1,3 +1,6 @@
+
+
+
 # MySQL 数据库相关配置
 db:
   host: 127.0.0.1  # MySQL 机器 IP 和端口，默认 127.0.0.1:3306
@@ -16,4 +19,4 @@ log:
   disable-stacktrace: false
   level: debug
   format: console
-  output-paths: [ /Users/sun/Downloads/miniblog.log, stdout ]
+  output-paths: [ /tmp/miniblog.log, stdout ]

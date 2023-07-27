@@ -1,11 +1,10 @@
 package miniblog
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"miniblog/internal/pkg/log"
+	"miniblog/pkg/version/verflag"
 )
 
 var cfgFile string
@@ -22,6 +21,10 @@ Find more miniblog information at:
 	https://github.com/marmotedu/miniblog#readme`, // 命令的详细描述
 		SilenceUsage: true, // 命令出错时，不打印帮助信息。即可以保证命令出错时一眼就能看到错误信息
 		RunE: func(cmd *cobra.Command, args []string) error { // 指定调用 cmd.Execute() 时，执行的 Run 函数，函数执行失败会返回错误信息
+
+			// 如果 `--version=true`，则打印版本并退出
+			verflag.PrintAdnExitIfRequested()
+
 			// 初始化日志
 			log.Init(logOptions())
 			// Sync 将缓存中的日志刷新到磁盘中，以防日志丢失
@@ -50,6 +53,9 @@ Find more miniblog information at:
 	// Cobra 也支持本地标志，本地标志只能在其所绑定的命令上使用
 	cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+	// 添加 --version 版本信息
+	verflag.AddFlags(cmd.PersistentFlags())
+
 	return cmd
 }
 
@@ -60,11 +66,11 @@ func run() error {
 	// ↓ 测试 viper
 
 	// 打印所有的配置项及值
-	settings, _ := json.Marshal(viper.AllSettings())
-	log.Infow(string(settings))
+	//settings, _ := json.Marshal(viper.AllSettings())
+	//log.Infow(string(settings))
 
 	// 打印 db 用户名
-	log.Infow(viper.GetString("db.username"))
+	//log.Infow(viper.GetString("db.username"))
 
 	return nil
 }
