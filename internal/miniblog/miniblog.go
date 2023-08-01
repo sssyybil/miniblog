@@ -7,7 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
+	"miniblog/internal/pkg/core"
+	"miniblog/internal/pkg/errno"
 	"miniblog/internal/pkg/log"
 	"miniblog/internal/pkg/middleware"
 	"miniblog/pkg/version/verflag"
@@ -84,27 +85,26 @@ func run() error {
 
 	g.Use(middlewares...)
 
-	// 注册 404 Handler
-	g.NoRoute(func(context *gin.Context) {
-		context.JSON(http.StatusOK, gin.H{"code": 10003, "message": "Page not found."}) // 将结果序列化为 JSON 格式放入 ResponseBody 中
+	// 注册 404 Handler，将结果序列化为 JSON 格式放入 ResponseBody 中
+	g.NoRoute(func(ctx *gin.Context) {
+		core.WriteResponse(ctx, errno.ErrPageNotFound, nil)
 	})
 
 	// 注册 /health Handler
-	g.GET("/health", func(context *gin.Context) {
-		log.C(context).Infow("Health function called")
-
-		context.JSON(http.StatusOK, gin.H{"status": "OK"})
+	g.GET("/health", func(ctx *gin.Context) {
+		log.C(ctx).Infow("Health function called")
+		core.WriteResponse(ctx, nil, gin.H{"status": "OK"})
 	})
 
-	// TODO 2023/7/27 15:08 sun: 为什么不直接使用 g.Run()
-	// 创建 HTTP Server 实例
-	server := &http.Server{Addr: viper.GetString("addr"), Handler: g}
-
-	logger, _ := zap.NewProduction()
-
-	logger.Sugar().Infow("Start to listening the incoming requests on http address", "addr", viper.GetString("addr"))
 	log.Infow("Start to listening the incoming requests on http address", "addr", viper.GetString("addr"))
 
+	/**
+	🍒启动 HTTP Server，共两种方式。可直接调用 gin.Run(addr ...string) 函数，也可调用 http.Server 并传入 gin。
+	因需要在代码中显示的停止服务运行（调用 server.shutdown() 函数），故选择第二种方式
+	*/
+
+	// 创建 HTTP Server 实例
+	server := &http.Server{Addr: viper.GetString("addr"), Handler: g}
 	go func() {
 		// 调用 server.shutdown() 方法时，Server、ListenAndServe、ListenAndServeTLS 方法会立刻返回 ErrServerClosed 错误，该错误为服务器关闭时的正常报错行为
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -114,15 +114,11 @@ func run() error {
 
 	// 等待中断信号，优雅的关闭服务器（10s 超时）
 	quit := make(chan os.Signal, 1)
-	/**
-	此处不阻塞
-	kill 默认会发送 SIGINT 信号
-	kill -2 发送 SIGTERM 信号（或 Ctrl+C）
-	kill -9 会发送 SIGKILL 信号，但无法被捕获，所以不添加在此处
-	*/
+	// 此处不阻塞。kill 默认会发送 SIGINT 信号；kill -2 发送 SIGTERM 信号（或 Ctrl+C）；kill -9 会发送 SIGKILL 信号，但无法被捕获，所以不添加在此处
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	// 阻塞在此，当接收到以上两种信号中的某一个时才会继续往下面进行
 	<-quit
+
 	log.Infow("Shutting down server...")
 
 	// 创建 ctx 用于通知服务器 goroutine，它有 10 秒时间完成当前正在处理的请求
