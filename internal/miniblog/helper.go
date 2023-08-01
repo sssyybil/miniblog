@@ -30,13 +30,17 @@ func initConfig() {
 	} else {
 		// 查找用户主目录
 		homeDir, err := os.UserHomeDir()
+
 		// 如果用户主目录获取失败，打印 'Error: XXX' 错误，并退出程序（error code 1）
 		cobra.CheckErr(err)
 
 		fmt.Printf("homeDir: %v\n", recommendedHomeDir)
 
 		// 将 `$HOME/<recommendedHomeDir>` 目录加入到配置文件的搜索路径中
-		viper.AddConfigPath(filepath.Join(homeDir, recommendedHomeDir))
+		join := filepath.Join(homeDir, recommendedHomeDir)
+		viper.AddConfigPath(join)
+
+		fmt.Printf("UserHomeDir: %v, join:%v\n", homeDir, join)
 
 		// 将当前目录加入到配置文件的搜索路径中
 		viper.AddConfigPath(".")

@@ -1,9 +1,11 @@
 package log
 
 import (
+	"context"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
+	"miniblog/internal/pkg/known"
 	"sync"
 	"time"
 )
@@ -14,7 +16,7 @@ var (
 )
 
 type ZapLogger struct {
-	z *zap.Logger
+	zLog *zap.Logger
 }
 
 // 🌻确保 zapLogger 实现了 Logger 接口，以下变量赋值，可以使错误在编译器被发现。该编程技巧在 Go 项目开发中被大量使用
@@ -73,7 +75,7 @@ func NewLogger(opts *Options) *ZapLogger {
 		log.Fatalln(err)
 	}
 
-	logger := &ZapLogger{z: z}
+	logger := &ZapLogger{zLog: z}
 
 	return logger
 }
@@ -91,7 +93,7 @@ type Logger interface {
 
 // Sync 调用底层 zap.Logger 的 Sync 方法，将缓存中的日志刷新到磁盘文件中，主程序需要在推出前调用 Sync
 func Sync() {
-	err := std.z.Sync()
+	err := std.zLog.Sync()
 	if err != nil {
 		log.Printf("Sync function error: %v\n", err)
 	}
@@ -99,61 +101,85 @@ func Sync() {
 
 // Debugw 输出 debug 级别的日志
 func Debugw(msg string, keyAndValues ...any) {
-	std.z.Sugar().Debugw(msg, keyAndValues)
+	std.zLog.Sugar().Debugw(msg, keyAndValues...)
 }
 
 // Infow 输出 info 级别的日志
 func Infow(msg string, keyAndValues ...any) {
-	std.z.Sugar().Infow(msg, keyAndValues)
+	std.zLog.Sugar().Infow(msg, keyAndValues...)
 }
 
 // Warnw 输出 warn 级别的日志
 func Warnw(msg string, keyAndValues ...any) {
-	std.z.Sugar().Warnw(msg, keyAndValues)
+	std.zLog.Sugar().Warnw(msg, keyAndValues...)
 }
 
 // Errorw 输出 error 级别的日志
 func Errorw(msg string, keyAndValues ...any) {
-	std.z.Sugar().Errorw(msg, keyAndValues)
+	std.zLog.Sugar().Errorw(msg, keyAndValues...)
 }
 
 // Panicw 输出 panic 级别的日志
 func Panicw(msg string, keyAndValues ...any) {
-	std.z.Sugar().Panicw(msg, keyAndValues)
+	std.zLog.Sugar().Panicw(msg, keyAndValues...)
 }
 
 // Fatalw 输出 fatal 级别的日志
 func Fatalw(msg string, keyAndValues ...any) {
-	std.z.Sugar().Fatalw(msg, keyAndValues)
+	std.zLog.Sugar().Fatalw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Debugw(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Debugw(msg, keyAndValues)
+	zl.zLog.Sugar().Debugw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Infow(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Infow(msg, keyAndValues)
+	zl.zLog.Sugar().Infow(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Warnw(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Warnw(msg, keyAndValues)
+	zl.zLog.Sugar().Warnw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Errorw(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Errorw(msg, keyAndValues)
+	zl.zLog.Sugar().Errorw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Panicw(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Panicw(msg, keyAndValues)
+	zl.zLog.Sugar().Panicw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Fatalw(msg string, keyAndValues ...any) {
-	zl.z.Sugar().Fatalw(msg, keyAndValues)
+	zl.zLog.Sugar().Fatalw(msg, keyAndValues...)
 }
 
 func (zl *ZapLogger) Sync() {
-	err := zl.z.Sync()
+	err := zl.zLog.Sync()
 	if err != nil {
 		log.Printf("Sync function error: %v\n", err)
 	}
+}
+
+/**
+实现能在日志中打印出每个请求的 X-RequestID
+*/
+
+// C 解析传入的 context，尝试提取关注的键值，并添加到 zap.Logger 结构化日志中
+func C(ctx context.Context) *ZapLogger {
+	return std.C(ctx)
+}
+
+func (zl *ZapLogger) C(ctx context.Context) *ZapLogger {
+	lc := zl.clone()
+	if requestId := ctx.Value(known.XRequestIdKey); requestId != nil {
+		lc.zLog = lc.zLog.With(zap.Any(known.XRequestIdKey, requestId))
+	}
+	return lc
+}
+
+// TODO 2023/7/27 18:19 sun: 加锁是不是能达到同样的效果？加锁与深拷贝相比，哪个性能更好？
+// clone 因 log 包被多个请求并发调用，为防止 X-Request-ID 污染，针对每个请求，都深拷贝一个 *zapLogger 对象，然后再添加 X-Request-ID
+func (zl *ZapLogger) clone() *ZapLogger {
+	lc := *zl
+	return &lc
 }

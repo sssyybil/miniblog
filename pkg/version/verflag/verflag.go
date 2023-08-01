@@ -87,14 +87,21 @@ func AddFlags(fs *pflag.FlagSet) {
 // PrintAdnExitIfRequested 检查是否传递了`--version` 标志，如果是，则打印版本信息并退出
 func PrintAdnExitIfRequested() {
 
+	//if *versionFlag == VersionRaw {
+	//	fmt.Printf("%#v\n", version.Get())
+	//	os.Exit(0)
+	//} else if *versionFlag == VersionTrue {
+	//	fmt.Printf("%s\n", version.Get())
+	//	os.Exit(0)
+	//}
+
 	// 根据 *versionFlag 值不同，输出不同格式的版本信息
-	if *versionFlag == VersionRaw {
+	switch *versionFlag {
+	case VersionRaw:
 		fmt.Printf("%#v\n", version.Get())
 		os.Exit(0)
-	} else if *versionFlag == VersionTrue {
+	case VersionTrue:
 		fmt.Printf("%s\n", version.Get())
 		os.Exit(0)
 	}
-
-	// TODO 2023/7/25 16:01 sun: 改成 switch ❓
 }

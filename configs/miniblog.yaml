@@ -1,6 +1,25 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 通用配置
+runmode: debug  # Gin 开发模式，可选值有：debug,release,test
+addr: 127.0.0.1:8080
+
 # MySQL 数据库相关配置
 db:
   host: 127.0.0.1  # MySQL 机器 IP 和端口，默认 127.0.0.1:3306

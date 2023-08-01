@@ -55,7 +55,7 @@ func (info Info) ToJSON() string {
 
 // Text 将版本信息编码为 UTF-8 格式的文本，并返回。
 func (info Info) Text() ([]byte, error) {
-	// github 第三方库 uitable（https://github.com/gosuri/uitable），可在终端应用程序中以表格形式表示数据。
+	// github 第三方库 uitable（https://github.com/gosuri /uitable），可在终端应用程序中以表格形式表示数据。
 	table := uitable.New()
 	table.RightAlign(0)
 	table.MaxColWidth = 80
