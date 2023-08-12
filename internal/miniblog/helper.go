@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"miniblog/internal/miniblog/store"
 	"miniblog/internal/pkg/log"
+	"miniblog/pkg/db"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,14 +42,10 @@ func initConfig() {
 		join := filepath.Join(homeDir, recommendedHomeDir)
 		viper.AddConfigPath(join)
 
-		fmt.Printf("UserHomeDir: %v, join:%v\n", homeDir, join)
-
 		// 将当前目录加入到配置文件的搜索路径中
 		viper.AddConfigPath(".")
-
 		// 设置配置文件格式为 yaml
 		viper.SetConfigType("yaml")
-
 		// 设置配置文件名称
 		viper.SetConfigName(defaultConfigName)
 	}
@@ -80,5 +78,26 @@ func logOptions() *log.Options {
 		Level:             viper.GetString("log.level"),
 		Format:            viper.GetString("log.format"),
 		OutputPaths:       viper.GetStringSlice("log.output-paths"),
+	}
+}
+
+// initStore 读取 db 配置，创建 gorm.DB 实例，并初始化 MiniBlog store 层
+func initStore() error {
+	dbOptions := &db.MySqlOptions{
+		Host:                  viper.GetString("db.host"),
+		Username:              viper.GetString("db.username"),
+		Password:              viper.GetString("db.password"),
+		Database:              viper.GetString("db.database"),
+		MaxIdleConnections:    viper.GetInt("db.max-idle-connections"),
+		MaxOpenConnections:    viper.GetInt("db.max-open-connections"),
+		MaxConnectionLifeTime: viper.GetDuration("db.max-connection-life-time"),
+		LogLevel:              viper.GetInt("db.log-level"),
+	}
+
+	if instance, err := db.NewMySql(dbOptions); err != nil {
+		return err
+	} else {
+		store.NewStore(instance)
+		return nil
 	}
 }
