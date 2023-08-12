@@ -38,5 +38,7 @@ func (b *UserBusiness) Create(ctx context.Context, req *v1.CreateUserRequest) er
 		if match, _ := regexp.MatchString("Duplicate entry '.*' for key 'username'", err.Error()); match {
 			return errno.ErrUserAlreadyExist
 		}
+		return err
 	}
+	return nil
 }
