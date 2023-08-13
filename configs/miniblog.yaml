@@ -1,3 +1,4 @@
+
 # 通用配置
 runmode: debug  # Gin 开发模式，可选值有：debug,release,test
 addr: 127.0.0.1:8080

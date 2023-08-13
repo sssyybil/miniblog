@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"gorm.io/gorm"
+	"miniblog/pkg/auth"
+	"time"
+)
 
 // UserM 存储用户信息
 // 结构体命名规范：表名首字母大写➕M（Model）
@@ -18,4 +22,12 @@ type UserM struct {
 // TableName 指定映射的 MySQL 表名
 func (u *UserM) TableName() string {
 	return "user"
+}
+
+// BeforeCreate 加密明文密钥
+func (u *UserM) BeforeCreate(db *gorm.DB) (err error) {
+	if u.Password, err = auth.Encrypt(u.Password); err != nil {
+		return err
+	}
+	return nil
 }

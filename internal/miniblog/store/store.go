@@ -7,7 +7,7 @@ import (
 
 var (
 	once      sync.Once
-	DataStore *Datastore
+	DataStore *Datastore // 全局变量，方便其它包直接调用已初始化好的 Datastore 实例
 )
 
 // IStore 定义了 store 层所需要实现的方法

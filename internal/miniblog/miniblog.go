@@ -7,8 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"miniblog/internal/pkg/core"
-	"miniblog/internal/pkg/errno"
 	"miniblog/internal/pkg/log"
 	"miniblog/internal/pkg/middleware"
 	"miniblog/pkg/version/verflag"
@@ -90,16 +88,20 @@ func run() error {
 
 	g.Use(middlewares...)
 
-	// 注册 404 Handler，将结果序列化为 JSON 格式放入 ResponseBody 中
-	g.NoRoute(func(ctx *gin.Context) {
-		core.WriteResponse(ctx, errno.ErrPageNotFound, nil)
-	})
+	//// 注册 404 Handler，将结果序列化为 JSON 格式放入 ResponseBody 中
+	//g.NoRoute(func(ctx *gin.Context) {
+	//	core.WriteResponse(ctx, errno.ErrPageNotFound, nil)
+	//})
+	//
+	//// 注册 /health Handler
+	//g.GET("/health", func(ctx *gin.Context) {
+	//	log.C(ctx).Infow("Health function called")
+	//	core.WriteResponse(ctx, nil, gin.H{"status": "OK"})
+	//})
 
-	// 注册 /health Handler
-	g.GET("/health", func(ctx *gin.Context) {
-		log.C(ctx).Infow("Health function called")
-		core.WriteResponse(ctx, nil, gin.H{"status": "OK"})
-	})
+	if err := installRouters(g); err != nil {
+		return err
+	}
 
 	log.Infow("Start to listening the incoming requests on http address", "addr", viper.GetString("addr"))
 
